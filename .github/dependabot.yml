@@ -1,0 +1,30 @@
+version: 2
+updates:
+  # Bump the tooling crates (serde, dprint-core, schemars, etc.) from crates.io
+  # as chores. badness-formatter is deliberately excluded: for this plugin a
+  # formatter bump is the product changing, so the dedicated
+  # `bump-badness-formatter` workflow opens it as a releasable `feat:`/`fix:`
+  # commit that versionary releases on -- a `deps:` PR here would not trigger a
+  # release. CI (ci.yml) builds the wasm and runs the dprint-vs-badness parity
+  # smoke test on every bump PR, so a behavior change fails the check instead of
+  # merging silently.
+  - package-ecosystem: cargo
+    directory: "/"
+    schedule:
+      interval: weekly
+    commit-message:
+      prefix: "deps"
+    groups:
+      cargo:
+        patterns:
+          - "*"
+    ignore:
+      - dependency-name: "badness-formatter"
+
+  # Keep the GitHub Actions used by the workflows current.
+  - package-ecosystem: github-actions
+    directory: "/"
+    schedule:
+      interval: weekly
+    commit-message:
+      prefix: "ci"

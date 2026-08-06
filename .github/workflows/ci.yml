@@ -1,0 +1,162 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  build-and-smoke:
+    name: Build & Parity Smoke Test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      # `rust-toolchain.toml` pins the channel, so it overrides any toolchain a
+      # setup action installs. Install straight from it instead, which brings
+      # the components and the wasm target it declares.
+      - name: Install Rust
+        run: |
+          rustup toolchain install --profile minimal
+          rustup component add rustfmt clippy
+          rustup target add wasm32-unknown-unknown
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          key: ci-wasm
+
+      - name: Check formatting
+        run: cargo fmt --all -- --check
+
+      - name: Clippy
+        run: cargo clippy --all-targets -- -D warnings
+
+      - name: Test (native)
+        run: cargo test
+
+      - name: Build wasm plugin
+        run: cargo build --release --target wasm32-unknown-unknown
+
+      - name: Install dprint
+        run: cargo install --locked dprint
+
+      # The plugin embeds `badness-formatter`; the CLI is a separate binary built
+      # from the same engine. Diffing them is the only thing that catches the
+      # plugin's config mapping drifting away from `badness format`.
+      - name: Download the badness CLI
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          # Only the bare `v*` stream carries binaries; the member-crate streams
+          # (`badness-formatter-v*`, …) publish to crates.io only.
+          TAG=$(gh release list --repo jolars/badness --limit 50 \
+            --json tagName --jq '[.[].tagName | select(test("^v[0-9]"))][0]')
+          echo "Using badness $TAG"
+          gh release download "$TAG" --repo jolars/badness \
+            --pattern 'badness-x86_64-unknown-linux-gnu.tar.gz'
+          mkdir -p cli && tar -xzf badness-x86_64-unknown-linux-gnu.tar.gz -C cli
+          find cli -type f -name badness -exec install -m755 {} "$RUNNER_TEMP/badness" \;
+          "$RUNNER_TEMP/badness" --version
+
+      # Two directories with identical inputs: one formatted by dprint, one by
+      # the CLI. Keeping them apart (rather than formatting one file with each
+      # tool in place) means the diff tests parity on its own, and the second
+      # `dprint fmt` tests idempotence on its own.
+      #
+      # The samples deliberately define no macros in a sibling `.sty`: the CLI
+      # folds in signatures scanned from disk, which a sandboxed Wasm plugin
+      # cannot read, so such a case would diverge legitimately (see README).
+      - name: Parity and idempotence smoke test
+        run: |
+          set -euo pipefail
+          WORK="$RUNNER_TEMP/smoke"
+          rm -rf "$WORK" && mkdir -p "$WORK/plugin" "$WORK/cli" && cd "$WORK"
+
+          write_samples() {
+            cat > "$1/sample.tex" <<'SAMPLE'
+          \documentclass{article}
+          \begin{document}
+          \section{Intro}
+          This    is  a paragraph with   sloppy spacing that should be reflowed by the formatter because it is long.
+          \begin{itemize}
+          \item one
+          \item two
+          \end{itemize}
+          \[ a+b = c \]
+          \end{document}
+          SAMPLE
+            cat > "$1/sample.bib" <<'SAMPLE'
+          @article{key, title={A   Title}, author={Doe, Jane}, year={2020}}
+          SAMPLE
+            # A package source: must keep its authored line breaks (the file
+            # kind's default wrap is `preserve`) and lex `@` as a letter.
+            cat > "$1/pkg.sty" <<'SAMPLE'
+          \ProvidesPackage{pkg}
+          \newcommand{\my@helper}[1]{%
+            #1}
+          SAMPLE
+            printf 'crlf   doc.\r\n\r\nsecond   para.\r\n' > "$1/crlf.tex"
+          }
+          write_samples plugin
+          write_samples cli
+
+          cat > plugin/dprint.json <<CONFIG
+          {
+            "badness": {},
+            "plugins": ["${GITHUB_WORKSPACE}/target/wasm32-unknown-unknown/release/dprint_plugin_badness.wasm"]
+          }
+          CONFIG
+
+          "$RUNNER_TEMP/badness" format cli/sample.tex cli/sample.bib cli/pkg.sty cli/crlf.tex
+          (cd plugin && dprint fmt)
+
+          echo "::group::plugin vs CLI"
+          diff -r --exclude=dprint.json plugin cli
+          echo "::endgroup::"
+
+          echo "::group::idempotence"
+          (cd plugin && dprint fmt && dprint check)
+          echo "::endgroup::"
+
+          # `auto` (the default) keeps the source's line endings, all the way
+          # into protected regions.
+          echo "::group::line endings"
+          grep -q $'\r' plugin/crlf.tex
+          ! grep -q $'\r' plugin/sample.tex
+          echo "::endgroup::"
+
+  versionary:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: build-and-smoke
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+      issues: write
+    outputs:
+      release_created: ${{ steps.versionary.outputs.release_created }}
+      tag_name: ${{ steps.versionary.outputs.tag_name }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+          fetch-tags: true
+          token: ${{ secrets.RELEASE_TOKEN }}
+
+      # See above: `rust-toolchain.toml` pins the channel, so install from it.
+      - name: Install Rust
+        run: rustup toolchain install --profile minimal
+
+      - id: versionary
+        uses: jolars/versionary@v0
+        with:
+          github-token: ${{ secrets.RELEASE_TOKEN }}

@@ -1,0 +1,26 @@
+[package]
+name = "dprint-plugin-badness"
+version = "0.1.0"
+edition = "2024"
+license = "MIT"
+repository = "https://github.com/jolars/dprint-plugin-badness"
+homepage = "https://badness.dev"
+authors = ["Johan Larsson <johan@jolars.co>"]
+description = "dprint Wasm plugin that wraps the badness formatter for LaTeX and BibTeX."
+publish = false
+
+# `lib` alongside `cdylib` so `cargo test` links the crate natively; only the
+# `cdylib` (with `generate_plugin_code!`) is a usable plugin.
+[lib]
+crate-type = ["lib", "cdylib"]
+
+[dependencies]
+# TODO(pre-release): switch to `badness-formatter = "0.2"` once the `line_ending`
+# release is on crates.io. `line_ending` (a `FormatStyle` field this plugin sets)
+# does not exist in the published 0.1.0, so development builds against the
+# sibling checkout.
+badness-formatter = { path = "../badness/crates/badness-formatter" }
+dprint-core = { version = "0.68", features = ["wasm"] }
+schemars = "1.0"
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"

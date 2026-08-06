@@ -1,0 +1,69 @@
+name: Publish dprint Wasm plugin
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Release tag to upload the assets to"
+        required: false
+        default: ""
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  build-wasm:
+    name: Build & Upload plugin.wasm
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v7
+
+      # See ci.yml: `rust-toolchain.toml` pins the channel and declares the
+      # wasm target, so install from it rather than fighting the override.
+      - name: Install Rust
+        run: |
+          rustup toolchain install --profile minimal
+          rustup target add wasm32-unknown-unknown
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          key: dprint-wasm
+
+      - name: Build
+        run: cargo build --release --target wasm32-unknown-unknown
+
+      # The asset MUST be named `plugin.wasm`: that is what the
+      # plugins.dprint.dev service resolves
+      # `plugins.dprint.dev/jolars/badness-<tag>.wasm` to.
+      - name: Stage release assets
+        run: |
+          set -euo pipefail
+          mkdir -p dist
+          cp target/wasm32-unknown-unknown/release/dprint_plugin_badness.wasm dist/plugin.wasm
+          cp schema.json dist/schema.json
+          (cd dist && sha256sum plugin.wasm > plugin.wasm.sha256)
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: badness-dprint-wasm
+          path: dist/
+          if-no-files-found: error
+
+      - name: Upload to release
+        if: github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && inputs.tag != '')
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          TAG="${{ github.ref_type == 'tag' && github.ref_name || inputs.tag }}"
+          gh release upload --clobber "$TAG" \
+            dist/plugin.wasm dist/plugin.wasm.sha256 dist/schema.json

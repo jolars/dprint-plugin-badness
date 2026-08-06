@@ -1,0 +1,60 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Configuration",
+  "description": "dprint-facing configuration, serialized as camelCase.\n\nThe enum-valued options are stored as `String` and parsed lazily. Their wire\nvalues keep `badness.toml`'s kebab-case spelling (`single-line`), so the two\nconfig files agree on everything but the key casing; badness's formatter\ncrate carries no serde, so the accepted values are listed here rather than\nborrowed from it (the same \"mirror type in the consuming crate\" split\nbadness's own `config.rs` and `cli.rs` use).",
+  "type": "object",
+  "properties": {
+    "lineWidth": {
+      "description": "Maximum line width the layout engine targets. Defaults to dprint's\nglobal `lineWidth`, or 80 if unset.",
+      "type": "integer",
+      "format": "uint32",
+      "minimum": 0,
+      "default": 80
+    },
+    "indentWidth": {
+      "description": "Number of spaces per indentation level. Defaults to dprint's global\n`indentWidth`, or 2 if unset. badness always indents with spaces, so\ndprint's global `useTabs` has no effect.",
+      "type": "integer",
+      "format": "uint32",
+      "minimum": 0,
+      "default": 2
+    },
+    "wrap": {
+      "description": "How to lay out line breaks inside a paragraph: `reflow`, `stable`,\n`sentence`, `semantic`, or `preserve`. When unset, each file kind uses\nits own default — `.tex` reflows; `.sty`, `.cls`, `.dtx`, `.ins`, and\n`*.code.tex` are code, so they preserve authored breaks.",
+      "type": [
+        "string",
+        "null"
+      ],
+      "default": null
+    },
+    "mathWrap": {
+      "description": "How to lay out line breaks inside display math: `auto`, `preserve`,\n`single-line`, or `break`. `auto` derives from the effective `wrap`.",
+      "type": "string",
+      "default": "auto"
+    },
+    "lineEnding": {
+      "description": "How the formatted line breaks are spelled: `auto`, `lf`, `crlf`, or\n`native`. Defaults to dprint's global `newLineKind`, or `auto` (keep\nwhat the file was written with) if unset.",
+      "type": "string",
+      "default": "auto"
+    },
+    "lang": {
+      "description": "Document language as a BCP-47-style code (`en`, `de`, `pt-BR`, …), used\nby the `sentence` and `semantic` wrap modes to pick the\nsentence-boundary abbreviation profile. Ignored by other wrap modes.",
+      "type": [
+        "string",
+        "null"
+      ],
+      "default": null
+    },
+    "noBreakAbbreviations": {
+      "description": "Extra no-break abbreviations for the `sentence` and `semantic` wrap\nmodes, keyed by language code or the literal `default` bucket. An\nabbreviation listed here never ends a sentence.",
+      "type": "object",
+      "additionalProperties": {
+        "type": "array",
+        "items": {
+          "type": "string"
+        }
+      },
+      "default": {}
+    }
+  },
+  "additionalProperties": false
+}
