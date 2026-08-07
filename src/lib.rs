@@ -60,12 +60,12 @@ fn default_line_ending_value() -> String {
 
 /// dprint-facing configuration, serialized as camelCase.
 ///
-/// The enum-valued options are stored as `String` and parsed lazily. Their wire
-/// values keep `badness.toml`'s kebab-case spelling (`single-line`), so the two
-/// config files agree on everything but the key casing; badness's formatter
-/// crate carries no serde, so the accepted values are listed here rather than
-/// borrowed from it (the same "mirror type in the consuming crate" split
-/// badness's own `config.rs` and `cli.rs` use).
+/// The enum-valued options are stored as `String` and parsed lazily, borrowing
+/// their JSON schema from the formatter's own enums (its `schema` feature) so
+/// the published `schema.json` enumerates badness's accepted values instead of
+/// hand-listing them here. Those wire values are `badness.toml`'s kebab-case
+/// spellings (`single-line`), so the two config files agree on everything but
+/// the key casing.
 #[derive(Clone, Serialize, Deserialize, JsonSchema)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct Configuration {
@@ -78,20 +78,21 @@ pub struct Configuration {
     /// dprint's global `useTabs` has no effect.
     #[serde(default = "default_indent_width")]
     indent_width: u32,
-    /// How to lay out line breaks inside a paragraph: `reflow`, `stable`,
-    /// `sentence`, `semantic`, or `preserve`. When unset, each file kind uses
-    /// its own default — `.tex` reflows; `.sty`, `.cls`, `.dtx`, `.ins`, and
-    /// `*.code.tex` are code, so they preserve authored breaks.
+    /// How to lay out line breaks inside a paragraph. When unset, each file kind
+    /// uses its own default — `.tex` reflows; `.sty`, `.cls`, `.dtx`, `.ins`,
+    /// and `*.code.tex` are code, so they preserve authored breaks.
     #[serde(default)]
+    #[schemars(with = "Option<WrapMode>")]
     wrap: Option<String>,
-    /// How to lay out line breaks inside display math: `auto`, `preserve`,
-    /// `single-line`, or `break`. `auto` derives from the effective `wrap`.
+    /// How to lay out line breaks inside display math. `auto` derives from the
+    /// effective `wrap`.
     #[serde(default = "default_math_wrap")]
+    #[schemars(with = "MathWrap")]
     math_wrap: String,
-    /// How the formatted line breaks are spelled: `auto`, `lf`, `crlf`, or
-    /// `native`. Defaults to dprint's global `newLineKind`, or `auto` (keep
-    /// what the file was written with) if unset.
+    /// How the formatted line breaks are spelled. Defaults to dprint's global
+    /// `newLineKind`, or `auto` (keep what the file was written with) if unset.
     #[serde(default = "default_line_ending_value")]
+    #[schemars(with = "LineEnding")]
     line_ending: String,
     /// Document language as a BCP-47-style code (`en`, `de`, `pt-BR`, …), used
     /// by the `sentence` and `semantic` wrap modes to pick the
@@ -865,6 +866,7 @@ mod tests {
 #[cfg(test)]
 mod schema_tests {
     use super::Configuration;
+    use dprint_core::configuration::ConfigurationDiagnostic;
 
     const SCHEMA_PATH: &str = concat!(env!("CARGO_MANIFEST_DIR"), "/schema.json");
 
@@ -888,6 +890,51 @@ mod schema_tests {
             committed, generated,
             "schema.json is stale; regenerate with `UPDATE_SCHEMA=1 cargo test`"
         );
+    }
+
+    /// The `const` values of a borrowed enum schema, in declaration order.
+    fn advertised_values(schema: &serde_json::Value, name: &str) -> Vec<String> {
+        schema["$defs"][name]["oneOf"]
+            .as_array()
+            .unwrap_or_else(|| panic!("{name} should be a borrowed enum schema"))
+            .iter()
+            .map(|variant| variant["const"].as_str().expect("a const").to_string())
+            .collect()
+    }
+
+    /// The whole point of borrowing the formatter's schemas: every value the
+    /// schema advertises has to be one the plugin can actually parse. When
+    /// badness grows a wrap mode, the regenerated schema gains a value the
+    /// matching `parse_*` does not know yet, and this fails — the schema and
+    /// the mapping cannot drift apart silently.
+    #[test]
+    fn every_advertised_value_parses() {
+        let schema: serde_json::Value =
+            serde_json::from_str(&generated_schema()).expect("valid JSON");
+
+        for name in ["WrapMode", "MathWrap", "LineEnding"] {
+            let values = advertised_values(&schema, name);
+            assert!(!values.is_empty(), "{name} advertises no values");
+            for value in values {
+                let mut diagnostics: Vec<ConfigurationDiagnostic> = Vec::new();
+                match name {
+                    "WrapMode" => {
+                        super::parse_wrap(&value, &mut diagnostics);
+                    }
+                    "MathWrap" => {
+                        super::parse_math_wrap(&value, &mut diagnostics);
+                    }
+                    _ => {
+                        super::parse_line_ending(&value, &mut diagnostics);
+                    }
+                }
+                assert!(
+                    diagnostics.is_empty(),
+                    "{name} advertises '{value}', which the plugin rejects: {}",
+                    diagnostics[0].message
+                );
+            }
+        }
     }
 
     #[test]

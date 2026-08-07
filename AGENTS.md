@@ -39,8 +39,9 @@ cargo clippy --all-targets -- -D warnings
 
 `mod schema_tests` generates the config schema with
 `schemars::schema_for!(Configuration)` and asserts the committed `schema.json` is
-in sync (regenerate with `UPDATE_SCHEMA=1 cargo test`) and that it advertises the
-real defaults.
+in sync (regenerate with `UPDATE_SCHEMA=1 cargo test`), that it advertises the
+real defaults, and that every enum value it advertises is one the `parse_*`
+helpers accept.
 
 Beyond the unit tests, correctness is enforced in CI
 (`.github/workflows/ci.yml`) by a **parity + idempotence smoke test**: it builds
@@ -71,15 +72,20 @@ Everything lives in `src/lib.rs`:
   already decided the file is ours.
 - `Configuration` — the dprint-facing config struct (camelCase,
   `deny_unknown_fields`). Enum-valued options are stored as `String` and parsed
-  lazily. Their wire values keep `badness.toml`'s kebab-case spelling
-  (`single-line`) so the two config files agree; `badness-formatter` carries no
-  serde, so the accepted values are listed here rather than borrowed from it —
-  the same "mirror type in the consuming crate" split badness's own `config.rs`
-  and `cli.rs` use. When the formatter grows an option, add the mirror here.
+  lazily, but their *schema* is borrowed from the formatter's own enums with
+  `#[schemars(with = "WrapMode")]` (`badness-formatter`'s `schema` feature), so
+  `schema.json` enumerates badness's real values instead of restating them.
+  Those wire values are `badness.toml`'s kebab-case spellings (`single-line`),
+  so the two config files agree on everything but the key casing. When the
+  formatter grows an option, add the mirror here.
 - `parse_wrap` / `parse_math_wrap` / `parse_line_ending` — map a string onto the
   formatter enum, pushing a `ConfigurationDiagnostic` on an unknown value. Each
   runs twice: once in `resolve_config` purely to collect diagnostics, and again
-  in `build_style` to produce the real value.
+  in `build_style` to produce the real value. These are still hand-written (the
+  diagnostics enumerate the accepted values), but they can no longer drift from
+  the schema: `schema_tests::every_advertised_value_parses` feeds every value
+  the generated schema advertises through them, so a new upstream variant fails
+  the test instead of being silently rejected at format time.
 - `validate_width` — mirrors `badness.toml`'s `1..=1000` bound on both widths.
 - `default_line_ending` — seeds `lineEnding` from dprint's global `newLineKind`.
   dprint has no equivalent of badness's `native`, and its `auto` means what
@@ -127,18 +133,13 @@ a different, unsandboxed, per-platform-binary product.) This is also why
 badness's own CI enforces, and why the local-package signature scope is
 unavailable here.
 
-## Bootstrapping (remove once the first release is out)
+## Bootstrapping (remove once the release is out)
 
-Two things are deliberately unfinished until `badness-formatter` ships the
-`line_ending` release:
-
-1. `Cargo.toml` depends on the sibling checkout by path, not on crates.io. The
-   published 0.1.0 has no `FormatStyle::line_ending`, which this plugin sets.
-   Switch to `badness-formatter = "0.2"` once it is published.
-2. The CI parity check downloads the *latest released* badness CLI, which still
-   normalizes CRLF to LF. The `crlf.tex` sample therefore diverges until a CLI
-   release carrying `line-ending` exists. That is the check doing its job; do
-   not weaken it — cut the badness release instead.
+`Cargo.toml` depends on the sibling checkout by path, not on crates.io, because
+the published `badness-formatter` 0.2.0 has no `schema` feature — the plugin
+needs it to borrow the formatter's enum schemas. **This does not build in CI**;
+switch to `badness-formatter = { version = "0.3", features = ["schema"] }` once
+that release is out, and delete this section.
 
 ## Releasing
 

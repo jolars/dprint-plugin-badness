@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "Configuration",
-  "description": "dprint-facing configuration, serialized as camelCase.\n\nThe enum-valued options are stored as `String` and parsed lazily. Their wire\nvalues keep `badness.toml`'s kebab-case spelling (`single-line`), so the two\nconfig files agree on everything but the key casing; badness's formatter\ncrate carries no serde, so the accepted values are listed here rather than\nborrowed from it (the same \"mirror type in the consuming crate\" split\nbadness's own `config.rs` and `cli.rs` use).",
+  "description": "dprint-facing configuration, serialized as camelCase.\n\nThe enum-valued options are stored as `String` and parsed lazily, borrowing\ntheir JSON schema from the formatter's own enums (its `schema` feature) so\nthe published `schema.json` enumerates badness's accepted values instead of\nhand-listing them here. Those wire values are `badness.toml`'s kebab-case\nspellings (`single-line`), so the two config files agree on everything but\nthe key casing.",
   "type": "object",
   "properties": {
     "lineWidth": {
@@ -19,21 +19,25 @@
       "default": 2
     },
     "wrap": {
-      "description": "How to lay out line breaks inside a paragraph: `reflow`, `stable`,\n`sentence`, `semantic`, or `preserve`. When unset, each file kind uses\nits own default — `.tex` reflows; `.sty`, `.cls`, `.dtx`, `.ins`, and\n`*.code.tex` are code, so they preserve authored breaks.",
-      "type": [
-        "string",
-        "null"
+      "description": "How to lay out line breaks inside a paragraph. When unset, each file kind\nuses its own default — `.tex` reflows; `.sty`, `.cls`, `.dtx`, `.ins`,\nand `*.code.tex` are code, so they preserve authored breaks.",
+      "anyOf": [
+        {
+          "$ref": "#/$defs/WrapMode"
+        },
+        {
+          "type": "null"
+        }
       ],
       "default": null
     },
     "mathWrap": {
-      "description": "How to lay out line breaks inside display math: `auto`, `preserve`,\n`single-line`, or `break`. `auto` derives from the effective `wrap`.",
-      "type": "string",
+      "description": "How to lay out line breaks inside display math. `auto` derives from the\neffective `wrap`.",
+      "$ref": "#/$defs/MathWrap",
       "default": "auto"
     },
     "lineEnding": {
-      "description": "How the formatted line breaks are spelled: `auto`, `lf`, `crlf`, or\n`native`. Defaults to dprint's global `newLineKind`, or `auto` (keep\nwhat the file was written with) if unset.",
-      "type": "string",
+      "description": "How the formatted line breaks are spelled. Defaults to dprint's global\n`newLineKind`, or `auto` (keep what the file was written with) if unset.",
+      "$ref": "#/$defs/LineEnding",
       "default": "auto"
     },
     "lang": {
@@ -56,5 +60,87 @@
       "default": {}
     }
   },
-  "additionalProperties": false
+  "additionalProperties": false,
+  "$defs": {
+    "WrapMode": {
+      "description": "How the formatter lays out the line breaks *inside* a paragraph. Modeled on\npanache's `WrapMode` (`crates/panache-formatter/src/config.rs`).\n\nThe sentence-boundary detection behind [`WrapMode::Sentence`] and\n[`WrapMode::Semantic`] is a per-language abbreviation profile\n(`formatter::sentence`); the language and any user no-break abbreviations are\nresolved from config into the [`SentenceOptions`](super::SentenceOptions)\nthreaded through the lowering.",
+      "oneOf": [
+        {
+          "description": "Greedy fill: pack words up to `line_width`, breaking only where the next\nword would not fit. The default.",
+          "type": "string",
+          "const": "reflow"
+        },
+        {
+          "description": "Preserve acceptable authored breaks and redistribute only the smallest\nregion needed to satisfy `line_width` and approach the soft equilibrium\ntarget ([`FormatStyle::stable_wrap_target`]). Aimed at keeping revision\ndiffs small: a small prose edit perturbs the smallest possible region.",
+          "type": "string",
+          "const": "stable"
+        },
+        {
+          "description": "Wrap after each sentence (one sentence per line). Line width is ignored — a\nlong sentence stays on one line.",
+          "type": "string",
+          "const": "sentence"
+        },
+        {
+          "description": "Semantic line breaks (<https://sembr.org/>): keep the author's soft line\nbreaks *and* add a break after each sentence. Like [`WrapMode::Sentence`]\nplus preserving authored newlines; clause boundaries survive only where the\nauthor placed a break (no comma/colon detection).",
+          "type": "string",
+          "const": "semantic"
+        },
+        {
+          "description": "Leave paragraph line breaks exactly as authored (only collapse trailing\nwhitespace and blank-line runs, as before reflow existed).",
+          "type": "string",
+          "const": "preserve"
+        }
+      ]
+    },
+    "MathWrap": {
+      "description": "How a single-formula *display-math* body (`\\[…\\]`, `$$…$$`, a non-grid\n`equation`) is line-broken. Grid environments (`align`, `gather`, matrices)\nand inline `$…$` are unaffected.",
+      "oneOf": [
+        {
+          "description": "Derive from the resolved [`WrapMode`]: [`WrapMode::Preserve`] gives\n[`MathWrap::Preserve`], every other wrap mode gives [`MathWrap::Break`].\nThe default.",
+          "type": "string",
+          "const": "auto"
+        },
+        {
+          "description": "Keep the author's line breaks inside the body. Content within each\nauthored line is still normalized (operator spacing, script tightening),\nand lines sit at the body indent.",
+          "type": "string",
+          "const": "preserve"
+        },
+        {
+          "description": "Never insert breaks: the body stays on one line, overflowing the line\nwidth if too long (matching inline math's behavior).",
+          "type": "string",
+          "const": "single-line"
+        },
+        {
+          "description": "Break a too-long body before its top-level binary/relation operators\n(amsmath style).",
+          "type": "string",
+          "const": "break"
+        }
+      ]
+    },
+    "LineEnding": {
+      "description": "The byte sequence the formatter's line breaks render as.\n\nThe layout engine always builds output with `\\n` (the printer is the sole\nauthority on *where* breaks go); this only selects how those breaks, and the\nones carried through from the source, are spelled in the final string. The\nconversion is document-wide — protected regions included, since a `verbatim`\nbody whose line terminators disagreed with the rest of the file would be a\nmixed-ending document (see the invariant note in\n`docs/src/development/formatter.md`).",
+      "oneOf": [
+        {
+          "description": "Keep what the source used: `\\r\\n` if the document's first line break is a\nCRLF, `\\n` otherwise. The default, so formatting never rewrites a file's\nline endings behind the author's back.",
+          "type": "string",
+          "const": "auto"
+        },
+        {
+          "description": "Always `\\n` (Unix).",
+          "type": "string",
+          "const": "lf"
+        },
+        {
+          "description": "Always `\\r\\n` (Windows).",
+          "type": "string",
+          "const": "crlf"
+        },
+        {
+          "description": "`\\r\\n` on Windows, `\\n` everywhere else.",
+          "type": "string",
+          "const": "native"
+        }
+      ]
+    }
+  }
 }
