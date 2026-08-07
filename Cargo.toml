@@ -15,11 +15,7 @@ publish = false
 crate-type = ["lib", "cdylib"]
 
 [dependencies]
-# TODO(pre-release): switch to `badness-formatter = "0.2"` once the `line_ending`
-# release is on crates.io. `line_ending` (a `FormatStyle` field this plugin sets)
-# does not exist in the published 0.1.0, so development builds against the
-# sibling checkout.
-badness-formatter = { path = "../badness/crates/badness-formatter" }
+badness-formatter = "0.2.0"
 dprint-core = { version = "0.68", features = ["wasm"] }
 schemars = "1.0"
 serde = { version = "1.0", features = ["derive"] }
