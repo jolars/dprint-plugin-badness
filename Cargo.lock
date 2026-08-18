@@ -77,9 +77,9 @@ checksum = "7704b5fdd17b18ae31c4c1da5a2e0305a2bf17b5249300a9ee9ed7b72114c636"
 
 [[package]]
 name = "dprint-core"
-version = "0.68.3"
+version = "0.68.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "404a8244bd1d64468dabfbd935ea9f66fd92956f7a12b9632807538736e6b9e4"
+checksum = "3a605d11e75effbf5bcc8e4db48a1b73345402b5db1119f7d28f4dc7525efd53"
 dependencies = [
  "bumpalo",
  "hashbrown 0.15.5",
@@ -93,7 +93,7 @@ dependencies = [
 
 [[package]]
 name = "dprint-plugin-badness"
-version = "0.2.0"
+version = "0.3.0"
 dependencies = [
  "badness-formatter",
  "dprint-core",
