@@ -118,7 +118,7 @@
       ]
     },
     "LineEnding": {
-      "description": "The byte sequence the formatter's line breaks render as.\n\nThe layout engine always builds output with `\\n` (the printer is the sole\nauthority on *where* breaks go); this only selects how those breaks, and the\nones carried through from the source, are spelled in the final string. The\nconversion is document-wide — protected regions included, since a `verbatim`\nbody whose line terminators disagreed with the rest of the file would be a\nmixed-ending document (see the invariant note in\n`docs/src/development/formatter.md`).",
+      "description": "The byte sequence the formatter's line breaks render as.\n\nThe layout engine always builds output with `\\n` (the printer is the sole\nauthority on *where* breaks go); this only selects how those breaks, and the\nones carried through from the source, are spelled in the final string. The\nconversion is document-wide — protected regions included, since a `verbatim`\nbody whose line terminators disagreed with the rest of the file would be a\nmixed-ending document (see the invariant note in\n`docs/src/development/architecture.md`, § *The formatter*).",
       "oneOf": [
         {
           "description": "Keep what the source used: `\\r\\n` if the document's first line break is a\nCRLF, `\\n` otherwise. The default, so formatting never rewrites a file's\nline endings behind the author's back.",

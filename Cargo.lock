@@ -22,6 +22,8 @@ checksum = "bd87e651909d83ace3defe1a20940f338c23f87bd5a14ffc06ea91171d2e2a76"
 dependencies = [
  "badness-parser",
  "rowan",
+ "schemars",
+ "serde",
 ]
 
 [[package]]
@@ -77,9 +79,9 @@ checksum = "7704b5fdd17b18ae31c4c1da5a2e0305a2bf17b5249300a9ee9ed7b72114c636"
 
 [[package]]
 name = "dprint-core"
-version = "0.68.5"
+version = "0.69.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ace8a07022e292c498f9568c6859f73e40721fa18c4c0760cdc56220f4b99040"
+checksum = "7554bfc77a03c35c5581d5f390b7f102c501e37841f7f43d29dd54a0b3c2284d"
 dependencies = [
  "bumpalo",
  "hashbrown 0.15.5",
