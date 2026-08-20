@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.4.0](https://github.com/jolars/dprint-plugin-badness/compare/v0.3.0...v0.4.0) (2026-08-20)
+
+### Features
+- borrow the config schema from `badness-formatter` ([`f4676d3`](https://github.com/jolars/dprint-plugin-badness/commit/f4676d33d407f1aa8ebbc45c9b63098d14dbd01b))
+
+### Bug Fixes
+- add missing schemars feature ([`0476e4d`](https://github.com/jolars/dprint-plugin-badness/commit/0476e4dd170609c5531646eda17e663c94756410))
+
 ## [0.3.0](https://github.com/jolars/dprint-plugin-badness/compare/v0.2.0...v0.3.0) (2026-08-17)
 
 ### Features
