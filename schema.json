@@ -63,7 +63,7 @@
   "additionalProperties": false,
   "$defs": {
     "WrapMode": {
-      "description": "How the formatter lays out the line breaks *inside* a paragraph. Modeled on\npanache's `WrapMode` (`crates/panache-formatter/src/config.rs`).\n\nThe sentence-boundary detection behind [`WrapMode::Sentence`] and\n[`WrapMode::Semantic`] is a per-language abbreviation profile\n(`formatter::sentence`); the language and any user no-break abbreviations are\nresolved from config into the [`SentenceOptions`](super::SentenceOptions)\nthreaded through the lowering.",
+      "description": "How the formatter lays out line breaks inside a paragraph.\n\nThe sentence-boundary detection behind [`WrapMode::Sentence`] and\n[`WrapMode::Semantic`] is a per-language abbreviation profile\n(`formatter::sentence`); the language and any user no-break abbreviations are\nresolved from config into the [`SentenceOptions`](super::SentenceOptions)\nthreaded through the lowering.",
       "oneOf": [
         {
           "description": "Greedy fill: pack words up to `line_width`, breaking only where the next\nword would not fit. The default.",

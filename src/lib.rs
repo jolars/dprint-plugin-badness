@@ -653,6 +653,13 @@ mod tests {
     }
 
     #[test]
+    fn package_preserve_mode_keeps_command_body_breaks() {
+        let cfg = config();
+        let input = "\\ProvidesPackage{pkg}\n\\newcommand{\\my@helper}[1]{%\n  #1}\n";
+        assert_eq!(format_all(&cfg, "pkg.sty", input), input);
+    }
+
+    #[test]
     fn bib_files_route_to_the_bib_formatter() {
         let cfg = config();
         let out = format_all(&cfg, "refs.bib", "@misc{k, t = {x}}\n");
