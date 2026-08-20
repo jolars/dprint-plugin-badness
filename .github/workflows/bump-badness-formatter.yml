@@ -11,11 +11,10 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
+      issues: write
       pull-requests: write
     steps:
       - uses: actions/checkout@v7
-        with:
-          token: ${{ secrets.RELEASE_TOKEN }}
 
       # See ci.yml: `rust-toolchain.toml` pins the channel, so install from it.
       - name: Install Rust
@@ -44,7 +43,7 @@ jobs:
       - name: Open the bump PR
         if: steps.check.outputs.needed == 'true'
         env:
-          GH_TOKEN: ${{ secrets.RELEASE_TOKEN }}
+          GH_TOKEN: ${{ github.token }}
           CURRENT: ${{ steps.check.outputs.current }}
           LATEST: ${{ steps.check.outputs.latest }}
         run: |
@@ -72,6 +71,7 @@ jobs:
           git push -u origin "$BRANCH"
 
           gh pr create \
+            --assignee jolars \
             --title "$TYPE: bump \`badness-formatter\` to $LATEST" \
             --body "Bumps \`badness-formatter\` from $CURRENT to $LATEST, regenerating \`schema.json\`.
 
