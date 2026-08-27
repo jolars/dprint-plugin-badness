@@ -18,6 +18,11 @@
       "minimum": 0,
       "default": 2
     },
+    "itemIndent": {
+      "description": "How continuation lines in list items are indented from the `\\item`\ncolumn.",
+      "$ref": "#/$defs/ItemIndent",
+      "default": "hang"
+    },
     "wrap": {
       "description": "How to lay out line breaks inside a paragraph. When unset, each file kind\nuses its own default — `.tex` reflows; `.sty`, `.cls`, `.dtx`, `.ins`,\nand `*.code.tex` are code, so they preserve authored breaks.",
       "anyOf": [
@@ -62,6 +67,26 @@
   },
   "additionalProperties": false,
   "$defs": {
+    "ItemIndent": {
+      "description": "How continuation lines in a list item are indented from the `\\item` column.",
+      "oneOf": [
+        {
+          "description": "Align continuations under the body following a bare `\\item `. The default.",
+          "type": "string",
+          "const": "hang"
+        },
+        {
+          "description": "Indent continuations by one `indent_width` step.",
+          "type": "string",
+          "const": "indent"
+        },
+        {
+          "description": "Align continuations with the `\\item` command.",
+          "type": "string",
+          "const": "none"
+        }
+      ]
+    },
     "WrapMode": {
       "description": "How the formatter lays out line breaks inside a paragraph.\n\nThe sentence-boundary detection behind [`WrapMode::Sentence`] and\n[`WrapMode::Semantic`] is a per-language abbreviation profile\n(`formatter::sentence`); the language and any user no-break abbreviations are\nresolved from config into the [`SentenceOptions`](super::SentenceOptions)\nthreaded through the lowering.",
       "oneOf": [

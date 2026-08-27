@@ -13,7 +13,7 @@ use badness_formatter::parser::{LatexFlavor, LexConfig, parse_with_flavor};
 use badness_formatter::rowan::{TextRange, TextSize};
 use badness_formatter::semantic::SignatureDb;
 use badness_formatter::syntax::SyntaxNode;
-use badness_formatter::{FormatStyle, LineEnding, MathWrap, SentenceOptions, WrapMode};
+use badness_formatter::{FormatStyle, ItemIndent, LineEnding, MathWrap, SentenceOptions, WrapMode};
 use dprint_core::configuration::{
     ConfigKeyMap, ConfigurationDiagnostic, GlobalConfiguration, NewLineKind, get_nullable_value,
     get_unknown_property_diagnostics, get_value,
@@ -54,6 +54,9 @@ fn default_indent_width() -> u32 {
 fn default_math_wrap() -> String {
     "auto".to_string()
 }
+fn default_item_indent() -> String {
+    "hang".to_string()
+}
 fn default_line_ending_value() -> String {
     "auto".to_string()
 }
@@ -78,6 +81,11 @@ pub struct Configuration {
     /// dprint's global `useTabs` has no effect.
     #[serde(default = "default_indent_width")]
     indent_width: u32,
+    /// How continuation lines in list items are indented from the `\item`
+    /// column.
+    #[serde(default = "default_item_indent")]
+    #[schemars(with = "ItemIndent")]
+    item_indent: String,
     /// How to lay out line breaks inside a paragraph. When unset, each file kind
     /// uses its own default — `.tex` reflows; `.sty`, `.cls`, `.dtx`, `.ins`,
     /// and `*.code.tex` are code, so they preserve authored breaks.
@@ -247,6 +255,18 @@ fn parse_math_wrap(value: &str, diagnostics: &mut Vec<ConfigurationDiagnostic>) 
     }
 }
 
+fn parse_item_indent(value: &str, diagnostics: &mut Vec<ConfigurationDiagnostic>) -> ItemIndent {
+    match value.to_ascii_lowercase().as_str() {
+        "hang" => ItemIndent::Hang,
+        "indent" => ItemIndent::Indent,
+        "none" => ItemIndent::None,
+        other => {
+            unknown_value("itemIndent", other, "hang, indent, none", diagnostics);
+            ItemIndent::Hang
+        }
+    }
+}
+
 fn parse_line_ending(value: &str, diagnostics: &mut Vec<ConfigurationDiagnostic>) -> LineEnding {
     match value.to_ascii_lowercase().as_str() {
         "auto" => LineEnding::Auto,
@@ -290,6 +310,7 @@ fn build_style(cfg: &Configuration, kind: FileKind) -> FormatStyle {
     FormatStyle {
         line_width: cfg.line_width as usize,
         indent_width: cfg.indent_width as usize,
+        item_indent: parse_item_indent(&cfg.item_indent, &mut throwaway),
         wrap: match &cfg.wrap {
             Some(value) => parse_wrap(value, &mut throwaway),
             None => kind.default_wrap(),
@@ -407,6 +428,12 @@ impl SyncPluginHandler<Configuration> for BadnessHandler {
             &mut diagnostics,
         );
         let wrap: Option<String> = get_nullable_value(&mut config, "wrap", &mut diagnostics);
+        let item_indent: String = get_value(
+            &mut config,
+            "itemIndent",
+            default_item_indent(),
+            &mut diagnostics,
+        );
         let math_wrap: String = get_value(
             &mut config,
             "mathWrap",
@@ -446,6 +473,7 @@ impl SyncPluginHandler<Configuration> for BadnessHandler {
         if let Some(value) = &wrap {
             let _ = parse_wrap(value, &mut diagnostics);
         }
+        let _ = parse_item_indent(&item_indent, &mut diagnostics);
         let _ = parse_math_wrap(&math_wrap, &mut diagnostics);
         let _ = parse_line_ending(&line_ending, &mut diagnostics);
 
@@ -455,6 +483,7 @@ impl SyncPluginHandler<Configuration> for BadnessHandler {
             config: Configuration {
                 line_width,
                 indent_width,
+                item_indent,
                 wrap,
                 math_wrap,
                 line_ending,
@@ -567,6 +596,7 @@ mod tests {
         Configuration {
             line_width: default_line_width(),
             indent_width: default_indent_width(),
+            item_indent: default_item_indent(),
             wrap: None,
             math_wrap: default_math_wrap(),
             line_ending: default_line_ending_value(),
@@ -672,6 +702,22 @@ mod tests {
         cfg.indent_width = 4;
         let out = format_all(&cfg, "refs.bib", "@misc{k, t = {x}}\n");
         assert_eq!(out, "@misc{k,\n    t = {x}\n}\n");
+    }
+
+    #[test]
+    fn item_indent_is_honored() {
+        let mut cfg = config();
+        cfg.wrap = Some("sentence".to_string());
+        cfg.item_indent = "none".to_string();
+        let out = format_all(
+            &cfg,
+            "doc.tex",
+            "\\begin{itemize}\n\\item First sentence. Second sentence.\n\\end{itemize}\n",
+        );
+        assert_eq!(
+            out,
+            "\\begin{itemize}\n  \\item First sentence.\n  Second sentence.\n\\end{itemize}\n"
+        );
     }
 
     #[test]
@@ -821,13 +867,14 @@ mod tests {
     fn unknown_values_report_a_diagnostic() {
         let mut diagnostics = Vec::new();
         let _ = parse_wrap("smart", &mut diagnostics);
+        let _ = parse_item_indent("deep", &mut diagnostics);
         let _ = parse_math_wrap("never", &mut diagnostics);
         let _ = parse_line_ending("cr", &mut diagnostics);
         let names: Vec<_> = diagnostics
             .iter()
             .map(|d| d.property_name.as_str())
             .collect();
-        assert_eq!(names, ["wrap", "mathWrap", "lineEnding"]);
+        assert_eq!(names, ["wrap", "itemIndent", "mathWrap", "lineEnding"]);
     }
 
     #[test]
@@ -919,7 +966,7 @@ mod schema_tests {
         let schema: serde_json::Value =
             serde_json::from_str(&generated_schema()).expect("valid JSON");
 
-        for name in ["WrapMode", "MathWrap", "LineEnding"] {
+        for name in ["WrapMode", "ItemIndent", "MathWrap", "LineEnding"] {
             let values = advertised_values(&schema, name);
             assert!(!values.is_empty(), "{name} advertises no values");
             for value in values {
@@ -927,6 +974,9 @@ mod schema_tests {
                 match name {
                     "WrapMode" => {
                         super::parse_wrap(&value, &mut diagnostics);
+                    }
+                    "ItemIndent" => {
+                        super::parse_item_indent(&value, &mut diagnostics);
                     }
                     "MathWrap" => {
                         super::parse_math_wrap(&value, &mut diagnostics);
@@ -951,6 +1001,7 @@ mod schema_tests {
         let props = &schema["properties"];
         assert_eq!(props["lineWidth"]["default"], 80);
         assert_eq!(props["indentWidth"]["default"], 2);
+        assert_eq!(props["itemIndent"]["default"], "hang");
         assert_eq!(props["mathWrap"]["default"], "auto");
         assert_eq!(props["lineEnding"]["default"], "auto");
         assert_eq!(schema["additionalProperties"], false);

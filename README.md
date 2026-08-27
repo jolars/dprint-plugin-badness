@@ -44,6 +44,7 @@ agree.
 | ---------------------- | --------------------------------------------------- | ------------------------- |
 | `lineWidth`            | integer, 1–1000                                     | dprint global, else `80`  |
 | `indentWidth`          | integer, 1–1000                                     | dprint global, else `2`   |
+| `itemIndent`           | `hang`, `indent`, `none`                            | `hang`                    |
 | `wrap`                 | `reflow`, `stable`, `sentence`, `semantic`, `preserve` | per file kind (see below) |
 | `mathWrap`             | `auto`, `preserve`, `single-line`, `break`          | `auto`                    |
 | `lineEnding`           | `auto`, `lf`, `crlf`, `native`                      | from global `newLineKind` |
