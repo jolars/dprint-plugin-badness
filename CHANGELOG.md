@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.6.0](https://github.com/jolars/dprint-plugin-badness/compare/v0.5.0...v0.6.0) (2026-08-27)
+
+### Features
+- support item indentation ([`8e5afb1`](https://github.com/jolars/dprint-plugin-badness/commit/8e5afb19f013e089d7e2bf59fb61f4276fb99c5f))
+- bump `badness-formatter` to 0.6.0 (#8) ([`1b734bc`](https://github.com/jolars/dprint-plugin-badness/commit/1b734bc97551334b6b104a155caf8b22f7abb637))
+
 ## [0.5.0](https://github.com/jolars/dprint-plugin-badness/compare/v0.4.0...v0.5.0) (2026-08-25)
 
 ### Features
