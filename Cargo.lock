@@ -16,9 +16,9 @@ checksum = "f2032f911046de80f0a198e0901378627c33f59ea0ac00e363d481118bd70a53"
 
 [[package]]
 name = "badness-formatter"
-version = "0.8.0"
+version = "0.8.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2b70c08dbf1c2fa0ed98e9b08f2a726d839a92aea440915e11190c916fd33500"
+checksum = "f6f975f6835aa4055c976eb31e17debe32a1b0f3ac971e0f6bcb8282132cbee9"
 dependencies = [
  "badness-parser",
  "rowan",
@@ -28,9 +28,9 @@ dependencies = [
 
 [[package]]
 name = "badness-parser"
-version = "0.7.0"
+version = "0.8.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e4363221921068f4f26cca948a50ffed63b4b624a6e813f4c639f3d7ba53532d"
+checksum = "81bae7b8aefd26e9c13c633fa6a3cd97a7bb2598cf4d06f7a67a1e721de69343"
 dependencies = [
  "phf",
  "phf_codegen",
