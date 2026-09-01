@@ -15,7 +15,7 @@ publish = false
 crate-type = ["lib", "cdylib"]
 
 [dependencies]
-badness-formatter = { version = "0.8.1", features = ["schema"] }
+badness-formatter = { version = "0.8.2", features = ["schema"] }
 dprint-core = { version = "0.69", features = ["wasm"] }
 schemars = "1.0"
 serde = { version = "1.0", features = ["derive"] }
