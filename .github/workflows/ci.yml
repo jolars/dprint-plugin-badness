@@ -150,7 +150,7 @@ jobs:
         with:
           fetch-depth: 0
           fetch-tags: true
-          token: ${{ secrets.RELEASE_TOKEN }}
+          token: ${{ secrets.RELEASE_TOKEN || github.token }}
 
       # See above: `rust-toolchain.toml` pins the channel, so install from it.
       - name: Install Rust
