@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.0.0](https://github.com/jolars/dprint-plugin-badness/compare/v0.7.2...v1.0.0) (2026-09-21)
+
+### Other changes
+- update devenv ([`ba89e19`](https://github.com/jolars/dprint-plugin-badness/commit/ba89e196ba58168376bc753adf13c082e3cf0e1a))
+- use direct pr mode ([`0225f08`](https://github.com/jolars/dprint-plugin-badness/commit/0225f08f84dbc132c33e0873e0a24d20830a4a54))
+- allow checkout without a release token ([`e7e1f37`](https://github.com/jolars/dprint-plugin-badness/commit/e7e1f37b1a247b28795d4d6d5d4b34e453806c64))
+- **release:** v0.7.2 (#16) ([`3e3e088`](https://github.com/jolars/dprint-plugin-badness/commit/3e3e08874c3e30bdc75aa6b3cd918b14d8950560))
+
 ## [0.7.2](https://github.com/jolars/dprint-plugin-badness/compare/v0.7.1...v0.7.2) (2026-09-04)
 
 ### Bug Fixes
