@@ -106,7 +106,7 @@
           "const": "sentence"
         },
         {
-          "description": "Semantic line breaks (<https://sembr.org/>): keep the author's soft line\nbreaks *and* add a break after each sentence. Like [`WrapMode::Sentence`]\nplus preserving authored newlines; clause boundaries survive only where the\nauthor placed a break (no comma/colon detection).",
+          "description": "Semantic line breaks (<https://sembr.org/>): keep the author's soft line\nbreaks, add a break after each sentence, and fill overlong lines to\n`line_width`. Clause boundaries survive only where the author placed a\nbreak (no comma/colon detection). A zero width disables width-based breaks.",
           "type": "string",
           "const": "semantic"
         },
