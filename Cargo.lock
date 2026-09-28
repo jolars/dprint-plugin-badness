@@ -16,9 +16,9 @@ checksum = "f2032f911046de80f0a198e0901378627c33f59ea0ac00e363d481118bd70a53"
 
 [[package]]
 name = "badness-formatter"
-version = "0.9.0"
+version = "0.10.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6c10fbed5449f5f8d2406a2cc00231d25b0bccd87b21b583e266448627dd7f34"
+checksum = "3124da73e1d99986961f6e5ac369ff1bcc65a86f3f2de9f770011976b2160f9e"
 dependencies = [
  "badness-parser",
  "rowan",
