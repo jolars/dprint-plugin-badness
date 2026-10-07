@@ -1,6 +1,6 @@
 [package]
 name = "dprint-plugin-badness"
-version = "1.2.0"
+version = "1.2.1"
 edition = "2024"
 license = "MIT"
 repository = "https://github.com/jolars/dprint-plugin-badness"
