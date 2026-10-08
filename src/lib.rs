@@ -494,6 +494,7 @@ impl SyncPluginHandler<Configuration> for BadnessHandler {
             file_matching: FileMatchingInfo {
                 file_extensions: FILE_EXTENSIONS.iter().map(|s| (*s).to_string()).collect(),
                 file_names: Vec::new(),
+                additive: false,
             },
         }
     }
@@ -905,6 +906,7 @@ mod tests {
         assert_eq!(result.config.indent_width, 4);
         assert_eq!(result.config.line_ending, "lf");
         assert_eq!(result.config.wrap, None);
+        assert!(!result.file_matching.additive);
         assert_eq!(result.diagnostics.len(), 1);
         assert_eq!(result.diagnostics[0].property_name, "nope");
         assert_eq!(
