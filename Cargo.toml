@@ -16,7 +16,7 @@ crate-type = ["lib", "cdylib"]
 
 [dependencies]
 badness-formatter = { version = "0.10.1", features = ["schema"] }
-dprint-core = { version = "0.69", features = ["wasm"] }
+dprint-core = { version = "0.70", features = ["wasm"] }
 schemars = "1.0"
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
