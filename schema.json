@@ -63,6 +63,38 @@
         }
       },
       "default": {}
+    },
+    "associations": {
+      "oneOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      ],
+      "description": "File patterns to associate with this plugin."
+    },
+    "locked": {
+      "description": "Whether this configuration may not be overridden or extended.",
+      "type": "boolean"
+    },
+    "overrides": {
+      "description": "Configuration overrides for matching files, applied in order.",
+      "oneOf": [
+        {
+          "$ref": "#/$defs/DprintOverride"
+        },
+        {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/DprintOverride"
+          }
+        }
+      ]
     }
   },
   "additionalProperties": false,
@@ -166,6 +198,90 @@
           "const": "native"
         }
       ]
+    },
+    "DprintOverride": {
+      "type": "object",
+      "properties": {
+        "lineWidth": {
+          "description": "Maximum line width the layout engine targets. Defaults to dprint's\nglobal `lineWidth`, or 80 if unset.",
+          "type": "integer",
+          "format": "uint32",
+          "minimum": 0,
+          "default": 80
+        },
+        "indentWidth": {
+          "description": "Number of spaces per indentation level. Defaults to dprint's global\n`indentWidth`, or 2 if unset. badness always indents with spaces, so\ndprint's global `useTabs` has no effect.",
+          "type": "integer",
+          "format": "uint32",
+          "minimum": 0,
+          "default": 2
+        },
+        "itemIndent": {
+          "description": "How continuation lines in list items are indented from the `\\item`\ncolumn.",
+          "$ref": "#/$defs/ItemIndent",
+          "default": "hang"
+        },
+        "wrap": {
+          "description": "How to lay out line breaks inside a paragraph. When unset, each file kind\nuses its own default — `.tex` reflows; `.sty`, `.cls`, `.dtx`, `.ins`,\nand `*.code.tex` are code, so they preserve authored breaks.",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/WrapMode"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "mathWrap": {
+          "description": "How to lay out line breaks inside display math. `auto` derives from the\neffective `wrap`.",
+          "$ref": "#/$defs/MathWrap",
+          "default": "auto"
+        },
+        "lineEnding": {
+          "description": "How the formatted line breaks are spelled. Defaults to dprint's global\n`newLineKind`, or `auto` (keep what the file was written with) if unset.",
+          "$ref": "#/$defs/LineEnding",
+          "default": "auto"
+        },
+        "lang": {
+          "description": "Document language as a BCP-47-style code (`en`, `de`, `pt-BR`, …), used\nby the `sentence` and `semantic` wrap modes to pick the\nsentence-boundary abbreviation profile. Ignored by other wrap modes.",
+          "type": [
+            "string",
+            "null"
+          ],
+          "default": null
+        },
+        "noBreakAbbreviations": {
+          "description": "Extra no-break abbreviations for the `sentence` and `semantic` wrap\nmodes, keyed by language code or the literal `default` bucket. An\nabbreviation listed here never ends a sentence.",
+          "type": "object",
+          "additionalProperties": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "default": {}
+        },
+        "files": {
+          "oneOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "minItems": 1
+            }
+          ]
+        }
+      },
+      "required": [
+        "files"
+      ],
+      "minProperties": 2,
+      "additionalProperties": false
     }
   }
 }

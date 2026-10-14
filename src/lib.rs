@@ -926,11 +926,88 @@ mod schema_tests {
 
     const SCHEMA_PATH: &str = concat!(env!("CARGO_MANIFEST_DIR"), "/schema.json");
 
+    fn plugin_schema() -> serde_json::Value {
+        let mut schema = serde_json::to_value(schemars::schema_for!(Configuration))
+            .expect("schema should serialize");
+        let patterns = serde_json::json!({
+            "oneOf": [
+                { "type": "string" },
+                { "type": "array", "items": { "type": "string" } }
+            ]
+        });
+
+        // dprint consumes these properties before passing configuration to the plugin.
+        // Overrides reuse formatter properties without allowing nested dprint settings.
+        let mut override_properties = schema["properties"].clone();
+        override_properties["files"] = patterns.clone();
+        override_properties["files"]["oneOf"][1]["minItems"] = serde_json::json!(1);
+        schema["$defs"]["DprintOverride"] = serde_json::json!({
+            "type": "object",
+            "properties": override_properties,
+            "required": ["files"],
+            "minProperties": 2,
+            "additionalProperties": false
+        });
+        schema["properties"]["associations"] = patterns;
+        schema["properties"]["associations"]["description"] =
+            serde_json::json!("File patterns to associate with this plugin.");
+        schema["properties"]["locked"] = serde_json::json!({
+            "description": "Whether this configuration may not be overridden or extended.",
+            "type": "boolean"
+        });
+        schema["properties"]["overrides"] = serde_json::json!({
+            "description": "Configuration overrides for matching files, applied in order.",
+            "oneOf": [
+                { "$ref": "#/$defs/DprintOverride" },
+                { "type": "array", "items": { "$ref": "#/$defs/DprintOverride" } }
+            ]
+        });
+        schema
+    }
+
     fn generated_schema() -> String {
-        let schema = schemars::schema_for!(Configuration);
+        let schema = plugin_schema();
         let mut out = serde_json::to_string_pretty(&schema).expect("schema should serialize");
         out.push('\n');
         out
+    }
+
+    #[test]
+    fn schema_includes_dprint_properties_and_strict_overrides() {
+        let schema = plugin_schema();
+        assert_eq!(schema["additionalProperties"], false);
+        assert_eq!(schema["properties"]["locked"]["type"], "boolean");
+        assert_eq!(
+            schema["properties"]["associations"]["oneOf"][0]["type"],
+            "string"
+        );
+        assert_eq!(
+            schema["properties"]["associations"]["oneOf"][1]["items"]["type"],
+            "string"
+        );
+        assert_eq!(
+            schema["properties"]["overrides"]["oneOf"][0]["$ref"],
+            "#/$defs/DprintOverride"
+        );
+        assert_eq!(
+            schema["properties"]["overrides"]["oneOf"][1]["items"]["$ref"],
+            "#/$defs/DprintOverride"
+        );
+        let override_schema = &schema["$defs"]["DprintOverride"];
+        assert_eq!(override_schema["required"], serde_json::json!(["files"]));
+        assert_eq!(override_schema["minProperties"], 2);
+        assert_eq!(
+            override_schema["properties"]["files"]["oneOf"][1]["minItems"],
+            1
+        );
+        assert_eq!(override_schema["additionalProperties"], false);
+        for (name, property) in schema["properties"].as_object().unwrap() {
+            if ["associations", "locked", "overrides"].contains(&name.as_str()) {
+                assert!(override_schema["properties"].get(name).is_none());
+            } else {
+                assert_eq!(&override_schema["properties"][name], property);
+            }
+        }
     }
 
     #[test]
