@@ -1,5 +1,11 @@
 # Changelog
 
+## [1.2.2](https://github.com/jolars/dprint-plugin-badness/compare/v1.2.1...v1.2.2) (2026-10-14)
+
+### Bug Fixes
+
+- accept dprint settings in config schema ([`53a548d`](https://github.com/jolars/dprint-plugin-badness/commit/53a548d2bbeda3769303471b023cc8c668c634ab))
+
 ## [1.2.1](https://github.com/jolars/dprint-plugin-badness/compare/v1.2.0...v1.2.1) (2026-10-07)
 
 ### Bug Fixes
