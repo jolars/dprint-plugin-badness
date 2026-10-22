@@ -1,5 +1,11 @@
 # Changelog
 
+## [1.3.0](https://github.com/jolars/dprint-plugin-badness/compare/v1.2.2...v1.3.0) (2026-10-22)
+
+### Features
+
+- bump `badness-formatter` to 0.11.0 ([`2732a06`](https://github.com/jolars/dprint-plugin-badness/commit/2732a0610f56199fbaa59f36c48f0b2e2ddf4b7f))
+
 ## [1.2.2](https://github.com/jolars/dprint-plugin-badness/compare/v1.2.1...v1.2.2) (2026-10-14)
 
 ### Bug Fixes
