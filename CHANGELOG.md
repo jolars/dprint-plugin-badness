@@ -1,5 +1,11 @@
 # Changelog
 
+## [1.4.2](https://github.com/jolars/dprint-plugin-badness/compare/v1.4.1...v1.4.2) (2026-11-17)
+
+### Bug Fixes
+
+- **deps:** upgrade `dprint-core` to 0.77.0 ([`2d96aae`](https://github.com/jolars/dprint-plugin-badness/commit/2d96aaee100efe62d5de00ea641f78213df0c0b2))
+
 ## [1.4.1](https://github.com/jolars/dprint-plugin-badness/compare/v1.4.0...v1.4.1) (2026-11-09)
 
 ### Bug Fixes
